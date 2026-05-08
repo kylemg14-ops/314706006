@@ -27,8 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: TypeScript typecheck
+        id: typecheck
+        run: npm run typecheck
+
       - name: Prettier check
+        id: prettier
         run: npx prettier --check .
+
+      - name: Run tests
+        id: test
+        run: npm test -- --reporter=junit --outputFile=test-results.xml
+        if: always()
 
       - name: Test Report
         uses: dorny/test-reporter@v1
@@ -39,5 +49,9 @@ jobs:
           reporter: java-junit
 
       - name: Final Check
-        if: steps.typecheck.outcome == 'failure' || steps.prettier.outcome == 'failure'
-        run: exit 1
+        if: always()
+        run: |
+          if [[ "${{ steps.typecheck.outcome }}" == "failure" || "${{ steps.prettier.outcome }}" == "failure" || "${{ steps.test.outcome }}" == "failure" ]]; then
+            echo "One of the checks failed"
+            exit 1
+          fi
